@@ -1,0 +1,576 @@
+import React, { useState } from 'react';
+import {
+  X,
+  Code2,
+  Copy,
+  Check,
+  FileSpreadsheet,
+  Terminal,
+  ExternalLink,
+  ShieldCheck,
+  Layers,
+  HelpCircle,
+  Download
+} from 'lucide-react';
+import { storage } from '../services/storage';
+import { translations, Language } from '../locales/translations';
+
+interface GasDocsModalProps {
+  onClose: () => void;
+}
+
+export const GasDocsModal: React.FC<GasDocsModalProps> = ({ onClose }) => {
+  const settings = storage.getSettings();
+  const lang: Language = settings.language;
+  const t = translations[lang];
+
+  const [activeTab, setActiveTab] = useState<'SETUP' | 'CODE_GS' | 'DB_SETUP' | 'IMPORT_GS' | 'GITHUB_PAGES'>('SETUP');
+  const [copiedFile, setCopiedFile] = useState<string | null>(null);
+
+  const copyToClipboard = (text: string, id: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedFile(id);
+    setTimeout(() => setCopiedFile(null), 2500);
+  };
+
+  const codeGsContent = `/**
+ * ============================================================================
+ * MKT CUSTOMER BUDGET MANAGEMENT - GOOGLE APPS SCRIPT BACKEND
+ * Spreadsheet ID: 1hMjeyC_Xizwj3ca67dGR0To1oGJGTw3VivFnT_o-76A
+ * ============================================================================
+ */
+
+const SPREADSHEET_ID = "1hMjeyC_Xizwj3ca67dGR0To1oGJGTw3VivFnT_o-76A";
+
+function getSpreadsheet() {
+  return SpreadsheetApp.openById(SPREADSHEET_ID);
+}
+
+/**
+ * Handle GET requests (Health check / Ping / Read queries)
+ */
+function doGet(e) {
+  try {
+    const action = e.parameter.action || "ping";
+    
+    if (action === "ping") {
+      return createJsonResponse({
+        success: true,
+        message: "MKT Budget Management GAS Backend is Active",
+        timestamp: new Date().toISOString(),
+        spreadsheetId: SPREADSHEET_ID
+      });
+    }
+
+    if (action === "getCustomers") {
+      const team = e.parameter.team || "ALL";
+      const customers = fetchCustomersFromSheet(team);
+      return createJsonResponse({ success: true, data: customers });
+    }
+
+    return createJsonResponse({ success: false, message: "Unknown action" });
+  } catch (err) {
+    return createJsonResponse({ success: false, error: err.toString() });
+  }
+}
+
+/**
+ * Handle POST requests (Mutations, Transactions, Budget Updates)
+ */
+function doPost(e) {
+  const lock = LockService.getScriptLock();
+  try {
+    // Wait up to 10 seconds for concurrent writes to prevent race conditions
+    lock.waitLock(10000);
+
+    const postData = JSON.parse(e.postData.contents);
+    const action = postData.action;
+    const payload = postData.payload || {};
+
+    let response = { success: false, message: "Action not recognized" };
+
+    switch (action) {
+      case "ADD_TRANSACTION":
+        response = processAddTransaction(payload);
+        break;
+      case "CANCEL_TRANSACTION":
+        response = processCancelTransaction(payload);
+        break;
+      case "NEW_CONTRACT_CYCLE":
+        response = processNewContractCycle(payload);
+        break;
+      case "UPDATE_BUDGET":
+        response = processUpdateBudget(payload);
+        break;
+      case "SYNC_BULK_DATA":
+        response = processBulkSync(payload);
+        break;
+      default:
+        response = { success: false, message: "Invalid action: " + action };
+    }
+
+    return createJsonResponse(response);
+  } catch (err) {
+    return createJsonResponse({ success: false, error: err.toString() });
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+/**
+ * Helper to build JSON output with correct CORS headers
+ */
+function createJsonResponse(data) {
+  return ContentService.createTextOutput(JSON.stringify(data))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+function processAddTransaction(payload) {
+  const ss = getSpreadsheet();
+  const txnSheet = ss.getSheetByName("BUDGET_TRANSACTIONS");
+  const budgetSheet = ss.getSheetByName("BUDGETS");
+  const logSheet = ss.getSheetByName("ACTIVITY_LOG");
+
+  // Validate remaining budget in BUDGETS sheet
+  // Append new row into BUDGET_TRANSACTIONS
+  txnSheet.appendRow([
+    payload.id,
+    payload.date,
+    payload.customerCode,
+    payload.customerName,
+    payload.team,
+    payload.contractId,
+    payload.budgetId,
+    payload.category,
+    payload.description,
+    payload.amount,
+    payload.invoiceRef || "",
+    payload.createdBy,
+    new Date(),
+    "ACTIVE"
+  ]);
+
+  // Log activity
+  logSheet.appendRow([
+    "LOG-" + Date.now(),
+    new Date(),
+    payload.createdBy,
+    "USER",
+    payload.team,
+    "ADD_TRANSACTION",
+    "Recorded " + payload.amount + " for " + payload.customerName
+  ]);
+
+  return { success: true, message: "Transaction saved successfully in Google Sheet" };
+}
+`;
+
+  const dbSetupContent = `/**
+ * ============================================================================
+ * ONE-CLICK DATABASE INITIALIZATION SCRIPT
+ * Run this function 'initializeDatabase()' once in Google Apps Script editor.
+ * It will safely create all 10 required sheets with proper headers & styling!
+ * ============================================================================
+ */
+
+function initializeDatabase() {
+  const ss = SpreadsheetApp.openById("1hMjeyC_Xizwj3ca67dGR0To1oGJGTw3VivFnT_o-76A");
+
+  const schema = {
+    "CUSTOMERS": [
+      "Customer Code", "Customer Name", "Team", "MDE", "Phone", "Address", "Province", "Status", "Created At"
+    ],
+    "CUSTOMER_CONDITIONS": [
+      "ID", "Customer Code", "Condition Quantity", "Condition UOM", "Product Description", "Updated At"
+    ],
+    "CONTRACTS": [
+      "Contract ID", "Customer Code", "Customer Name", "Team", "Commencing On", "Expiring On", "Cycle Number", "Status", "Notes", "Created At"
+    ],
+    "BUDGETS": [
+      "Budget ID", "Contract ID", "Customer Code", "Team", "Annual Amount", "Total Used", "Remaining Amount", "Utilization (%)", "Status", "Allow Exception", "Exception Reason", "Updated At"
+    ],
+    "BUDGET_TRANSACTIONS": [
+      "Transaction ID", "Date", "Customer Code", "Customer Name", "Team", "Contract ID", "Budget ID", "Category", "Description", "Amount", "Invoice Ref", "Created By", "Created At", "Status", "Cancellation Reason"
+    ],
+    "USERS": [
+      "User ID", "Username", "Password Hash", "Full Name", "Email", "Role", "Assigned Team", "Is Active", "Created At", "Last Login"
+    ],
+    "CATEGORIES": [
+      "Category ID", "Name Lao", "Name English", "Code", "Description"
+    ],
+    "ACTIVITY_LOG": [
+      "Log ID", "Timestamp", "User", "Role", "Team", "Action", "Details"
+    ],
+    "SETTINGS": [
+      "Setting Key", "Setting Value", "Description", "Updated At"
+    ],
+    "SESSIONS": [
+      "Session ID", "Username", "Token", "Expires At", "Created At"
+    ]
+  };
+
+  for (const [sheetName, headers] of Object.entries(schema)) {
+    let sheet = ss.getSheetByName(sheetName);
+    if (!sheet) {
+      sheet = ss.insertSheet(sheetName);
+      sheet.appendRow(headers);
+      
+      // Header styling
+      const headerRange = sheet.getRange(1, 1, 1, headers.length);
+      headerRange.setBackground("#0f172a");
+      headerRange.setFontColor("#ffffff");
+      headerRange.setFontWeight("bold");
+      sheet.setFrozenRows(1);
+    }
+  }
+
+  Logger.log("All 10 sheets initialized successfully in spreadsheet!");
+}
+`;
+
+  const importGsContent = `/**
+ * ============================================================================
+ * CUSTOMER DATA IMPORT SCRIPT
+ * Reads existing Excel data columns:
+ * 1. MDE
+ * 2. Customer Code
+ * 3. Customer Name
+ * 4. Condition Quantity
+ * 5. Condition UOM
+ * 6. Condition Product Code Description
+ * 7. Commencing On
+ * 8. Expiring On
+ * 
+ * Maps MDE-B1..B7 to B1..B7 and initializes contract cycles without overwriting history.
+ * ============================================================================
+ */
+
+function importExistingCustomerData() {
+  const ss = SpreadsheetApp.openById("1hMjeyC_Xizwj3ca67dGR0To1oGJGTw3VivFnT_o-76A");
+  
+  // Sheet containing raw imported Excel rows
+  const sourceSheet = ss.getSheetByName("Sheet1") || ss.getSheets()[0];
+  const targetCust = ss.getSheetByName("CUSTOMERS");
+  const targetCond = ss.getSheetByName("CUSTOMER_CONDITIONS");
+  const targetCont = ss.getSheetByName("CONTRACTS");
+  const targetBdg = ss.getSheetByName("BUDGETS");
+
+  const data = sourceSheet.getDataRange().getValues();
+  if (data.length < 2) return;
+
+  let count = 0;
+  for (let i = 1; i < data.length; i++) {
+    const row = data[i];
+    const mde = String(row[0] || "").trim();
+    const customerCode = String(row[1] || "").trim();
+    const customerName = String(row[2] || "").trim();
+    const condQty = Number(row[3]) || 0;
+    const condUom = String(row[4] || "Cartons").trim();
+    const condDesc = String(row[5] || "").trim();
+    const commencingOn = row[6] ? Utilities.formatDate(new Date(row[6]), "GMT+7", "yyyy-MM-dd") : "2026-01-01";
+    const expiringOn = row[7] ? Utilities.formatDate(new Date(row[7]), "GMT+7", "yyyy-MM-dd") : "2026-12-31";
+
+    if (!customerCode || !customerName) continue;
+
+    // Team mapping: MDE-B1 -> B1
+    const teamMatch = mde.match(/B[1-7]/i);
+    const team = teamMatch ? teamMatch[0].toUpperCase() : "B1";
+
+    // Insert or update customer
+    targetCust.appendRow([
+      customerCode, customerName, team, mde, "", "", "", "ACTIVE", new Date()
+    ]);
+
+    // Insert condition
+    targetCond.appendRow([
+      "CND-" + customerCode, customerCode, condQty, condUom, condDesc, new Date()
+    ]);
+
+    // Insert Contract Cycle 1
+    const contractId = "CNT-" + customerCode + "-01";
+    const budgetId = "BDG-" + customerCode + "-01";
+
+    targetCont.appendRow([
+      contractId, customerCode, customerName, team, commencingOn, expiringOn, 1, "ACTIVE", "Imported from Excel", new Date()
+    ]);
+
+    // Default Annual Budget Amount: 30,000,000 LAK
+    const annualAmount = 30000000;
+    targetBdg.appendRow([
+      budgetId, contractId, customerCode, team, annualAmount, 0, annualAmount, 0, "NORMAL", false, "", new Date()
+    ]);
+
+    count++;
+  }
+
+  Logger.log("Imported " + count + " customers successfully!");
+}
+`;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 overflow-y-auto">
+      <div className="w-full max-w-4xl rounded-3xl bg-white shadow-2xl border border-slate-100 overflow-hidden my-8 animate-in fade-in zoom-in-95">
+        
+        {/* Header */}
+        <div className="bg-slate-900 p-6 text-white flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-xl bg-blue-600 flex items-center justify-center text-white font-bold">
+              <Code2 className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-base font-bold text-white">
+                Google Apps Script Backend & Deployment Guide
+              </h3>
+              <p className="text-xs text-slate-400">
+                Spreadsheet ID: <code className="text-blue-300 font-mono">{settings.spreadsheetId}</code>
+              </p>
+            </div>
+          </div>
+
+          <button
+            onClick={onClose}
+            className="p-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition cursor-pointer"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Tab selection */}
+        <div className="bg-slate-50 border-b border-slate-200 px-6 py-2 flex items-center gap-2 flex-wrap">
+          <button
+            onClick={() => setActiveTab('SETUP')}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
+              activeTab === 'SETUP' ? 'bg-blue-600 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-200/60'
+            }`}
+          >
+            1. Setup Guide (ຂັ້ນຕອນຕິດຕັ້ງ)
+          </button>
+          <button
+            onClick={() => setActiveTab('CODE_GS')}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
+              activeTab === 'CODE_GS' ? 'bg-blue-600 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-200/60'
+            }`}
+          >
+            Code.gs (API Backend)
+          </button>
+          <button
+            onClick={() => setActiveTab('DB_SETUP')}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
+              activeTab === 'DB_SETUP' ? 'bg-blue-600 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-200/60'
+            }`}
+          >
+            DatabaseSetup.gs (10 Sheets)
+          </button>
+          <button
+            onClick={() => setActiveTab('IMPORT_GS')}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
+              activeTab === 'IMPORT_GS' ? 'bg-blue-600 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-200/60'
+            }`}
+          >
+            CustomerImport.gs
+          </button>
+          <button
+            onClick={() => setActiveTab('GITHUB_PAGES')}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
+              activeTab === 'GITHUB_PAGES' ? 'bg-blue-600 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-200/60'
+            }`}
+          >
+            GitHub Pages Deploy
+          </button>
+        </div>
+
+        {/* Modal content body */}
+        <div className="p-6 max-h-[65vh] overflow-y-auto">
+          
+          {/* TAB 1: SETUP GUIDE */}
+          {activeTab === 'SETUP' && (
+            <div className="space-y-6 text-xs text-slate-700">
+              <div className="p-4 bg-blue-50 border border-blue-200 rounded-2xl">
+                <h4 className="font-bold text-sm text-blue-900 mb-1">
+                  {lang === 'lo' ? 'ວິທີການເຊື່ອມຕໍ່ Google Apps Script ກັບ Google Sheets ຂອງທ່ານ:' : 'How to deploy Apps Script backend to your Google Sheets:'}
+                </h4>
+                <p className="text-blue-800 leading-relaxed">
+                  {lang === 'lo'
+                    ? 'ທ່ານສາມາດຕິດຕັ້ງ Backend ໄດ້ງ່າຍໆໃນ 4 ຂັ້ນຕອນ ເພື່ອໃຫ້ເວັບແອັບສາມາດອ່ານ ແລະ ຂຽນຂໍ້ມູນລົງໃນ Google Sheet ຕົວຈິງໄດ້.'
+                    : 'Deploy this backend in 4 simple steps to enable real-time reading and writing to your Google Sheets spreadsheet.'}
+                </p>
+              </div>
+
+              <div className="space-y-4">
+                <div className="flex items-start gap-3 p-3.5 bg-slate-50 rounded-xl border border-slate-200">
+                  <div className="w-6 h-6 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center flex-shrink-0 text-xs">
+                    1
+                  </div>
+                  <div>
+                    <h5 className="font-bold text-slate-900 text-xs">
+                      {lang === 'lo' ? 'ເປີດ Google Sheet ແລະ Apps Script Editor' : 'Open Google Sheet and Apps Script Editor'}
+                    </h5>
+                    <p className="text-slate-600 mt-0.5 leading-relaxed">
+                      {lang === 'lo'
+                        ? 'ເປີດ Google Sheet ID: 1hMjeyC_Xizwj3ca67dGR0To1oGJGTw3VivFnT_o-76A ຈາກນັ້ນໄປທີ່ເມນູ Extensions > Apps Script.'
+                        : 'Open Google Sheet ID: 1hMjeyC_Xizwj3ca67dGR0To1oGJGTw3VivFnT_o-76A, then click Extensions > Apps Script in the top toolbar.'}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3 p-3.5 bg-slate-50 rounded-xl border border-slate-200">
+                  <div className="w-6 h-6 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center flex-shrink-0 text-xs">
+                    2
+                  </div>
+                  <div>
+                    <h5 className="font-bold text-slate-900 text-xs">
+                      {lang === 'lo' ? 'ກັອບປີ້ໄຟລ໌ DatabaseSetup.gs ແລະ ກົດ Run' : 'Paste DatabaseSetup.gs and Run'}
+                    </h5>
+                    <p className="text-slate-600 mt-0.5 leading-relaxed">
+                      {lang === 'lo'
+                        ? 'ກັອບປີ້ໂຄດຈາກແທັບ "DatabaseSetup.gs" ໄປໃສ່ໃນ Apps Script ແລ້ວກົດ Run ຟັງຊັນ initializeDatabase() ເພື່ອສ້າງທັງໝົດ 10 Sheets ອັດຕະໂນມັດ.'
+                        : 'Copy code from "DatabaseSetup.gs" tab and execute initializeDatabase() function once to create all 10 required sheets.'}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3 p-3.5 bg-slate-50 rounded-xl border border-slate-200">
+                  <div className="w-6 h-6 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center flex-shrink-0 text-xs">
+                    3
+                  </div>
+                  <div>
+                    <h5 className="font-bold text-slate-900 text-xs">
+                      {lang === 'lo' ? 'ກັອບປີ້ໂຄດ Code.gs ແລະ Deploy Web App' : 'Paste Code.gs and Deploy as Web App'}
+                    </h5>
+                    <p className="text-slate-600 mt-0.5 leading-relaxed">
+                      {lang === 'lo'
+                        ? 'ກັອບປີ້ໂຄດຈາກແທັບ "Code.gs", ຈາກນັ້ນກົດປຸ່ມ Deploy (ມຸມຂວາເທິງ) > New deployment > ເລືອກ Web App:\n• Execute as: Me\n• Who has access: Anyone'
+                        : 'Paste Code.gs, then click Deploy > New deployment > Web App:\n• Execute as: Me\n• Who has access: Anyone (required for frontend fetch access).'}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3 p-3.5 bg-slate-50 rounded-xl border border-slate-200">
+                  <div className="w-6 h-6 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center flex-shrink-0 text-xs">
+                    4
+                  </div>
+                  <div>
+                    <h5 className="font-bold text-slate-900 text-xs">
+                      {lang === 'lo' ? 'ເຊື່ອມຕໍ່ URL ເຂົ້າກັບແອັບນີ້' : 'Connect Web App URL in App Settings'}
+                    </h5>
+                    <p className="text-slate-600 mt-0.5 leading-relaxed">
+                      {lang === 'lo'
+                        ? 'ກັອບປີ້ Web App URL ທີ່ໄດ້ (ລົງທ້າຍດ້ວຍ /exec) ມາວາງໃສ່ໃນໜ້າ "Settings" ຂອງແອັບນີ້ ແລ້ວກົດ Test Connection.'
+                        : 'Copy the generated Web App URL (ending in /exec) and paste it into the Settings tab in this app, then click Test.'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 2: CODE.GS */}
+          {activeTab === 'CODE_GS' && (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-mono font-bold text-slate-700">Code.gs</span>
+                <button
+                  onClick={() => copyToClipboard(codeGsContent, 'codeGs')}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold cursor-pointer shadow-xs"
+                >
+                  {copiedFile === 'codeGs' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                  <span>{copiedFile === 'codeGs' ? 'Copied!' : 'Copy Code'}</span>
+                </button>
+              </div>
+              <pre className="p-4 bg-slate-950 text-slate-200 rounded-2xl text-[11px] font-mono overflow-x-auto max-h-[50vh] border border-slate-800">
+                {codeGsContent}
+              </pre>
+            </div>
+          )}
+
+          {/* TAB 3: DB_SETUP */}
+          {activeTab === 'DB_SETUP' && (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-mono font-bold text-slate-700">DatabaseSetup.gs</span>
+                <button
+                  onClick={() => copyToClipboard(dbSetupContent, 'dbSetup')}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold cursor-pointer shadow-xs"
+                >
+                  {copiedFile === 'dbSetup' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                  <span>{copiedFile === 'dbSetup' ? 'Copied!' : 'Copy Code'}</span>
+                </button>
+              </div>
+              <pre className="p-4 bg-slate-950 text-slate-200 rounded-2xl text-[11px] font-mono overflow-x-auto max-h-[50vh] border border-slate-800">
+                {dbSetupContent}
+              </pre>
+            </div>
+          )}
+
+          {/* TAB 4: IMPORT_GS */}
+          {activeTab === 'IMPORT_GS' && (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-mono font-bold text-slate-700">CustomerImport.gs</span>
+                <button
+                  onClick={() => copyToClipboard(importGsContent, 'importGs')}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold cursor-pointer shadow-xs"
+                >
+                  {copiedFile === 'importGs' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                  <span>{copiedFile === 'importGs' ? 'Copied!' : 'Copy Code'}</span>
+                </button>
+              </div>
+              <pre className="p-4 bg-slate-950 text-slate-200 rounded-2xl text-[11px] font-mono overflow-x-auto max-h-[50vh] border border-slate-800">
+                {importGsContent}
+              </pre>
+            </div>
+          )}
+
+          {/* TAB 5: GITHUB PAGES */}
+          {activeTab === 'GITHUB_PAGES' && (
+            <div className="space-y-4 text-xs text-slate-700">
+              <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl">
+                <h4 className="font-bold text-sm text-slate-900 mb-1">
+                  GitHub Pages Deployment Instructions
+                </h4>
+                <p className="text-slate-600 leading-relaxed">
+                  This application is built with Vite React SPA and static PWA assets, making it 100% compatible with GitHub Pages hosting with zero server costs!
+                </p>
+              </div>
+
+              <div className="space-y-3">
+                <div className="p-3 bg-white rounded-xl border border-slate-200">
+                  <span className="font-bold text-slate-900">Step 1: Build the static bundle</span>
+                  <pre className="mt-1 p-2 bg-slate-900 text-slate-200 rounded-lg font-mono text-[11px]">
+                    npm run build
+                  </pre>
+                </div>
+
+                <div className="p-3 bg-white rounded-xl border border-slate-200">
+                  <span className="font-bold text-slate-900">Step 2: Deploy to GitHub Repository</span>
+                  <p className="text-slate-600 mt-1">
+                    Push the project to your GitHub repository. In your repository Settings &gt; Pages, select source: <code>GitHub Actions</code> or deploy the <code>dist</code> folder via <code>gh-pages</code>.
+                  </p>
+                </div>
+
+                <div className="p-3 bg-white rounded-xl border border-slate-200">
+                  <span className="font-bold text-slate-900">Step 3: Access control & PWA offline cache</span>
+                  <p className="text-slate-600 mt-1">
+                    All authentication and team access permissions (B1-B7) will work seamlessly on GitHub Pages. The service worker precaches all visual assets for offline usage.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+        </div>
+
+        {/* Footer */}
+        <div className="bg-slate-50 px-6 py-3 border-t border-slate-200 flex justify-end">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold"
+          >
+            {lang === 'lo' ? 'ປິດໜ້າຈໍ' : 'Close'}
+          </button>
+        </div>
+
+      </div>
+    </div>
+  );
+};
