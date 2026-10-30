@@ -10,7 +10,8 @@ import {
   Settings,
   Code2,
   CalendarCheck,
-  Sparkles
+  Sparkles,
+  X
 } from 'lucide-react';
 import { storage } from '../services/storage';
 import { translations, Language } from '../locales/translations';
@@ -98,27 +99,36 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {/* Mobile Backdrop */}
       {mobileMenuOpen && (
         <div
-          className="fixed inset-0 z-40 bg-slate-900/60 backdrop-blur-xs lg:hidden"
+          className="fixed inset-0 z-40 bg-slate-950/70 backdrop-blur-sm lg:hidden transition-opacity"
           onClick={() => setMobileMenuOpen(false)}
         />
       )}
 
       {/* Sidebar container */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 w-64 bg-slate-900 border-r border-slate-800 text-slate-300 transform transition-transform duration-200 ease-in-out lg:static lg:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-50 w-64 bg-slate-900 border-r border-slate-800 text-slate-300 transform transition-transform duration-200 ease-in-out lg:sticky lg:top-16 lg:h-[calc(100vh-4rem)] lg:translate-x-0 ${
           mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
-        } flex flex-col justify-between`}
+        } flex flex-col justify-between shadow-2xl lg:shadow-none`}
       >
-        <div className="p-4 space-y-6 overflow-y-auto">
-          {/* Logo on mobile inside drawer */}
-          <div className="flex items-center gap-2.5 px-2 lg:hidden">
-            <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center font-bold text-white text-xs">
-              MKT
+        <div className="p-4 space-y-4 overflow-y-auto flex-1">
+          {/* Header on mobile inside drawer with Close button */}
+          <div className="flex items-center justify-between px-2 pb-3 border-b border-slate-800 lg:hidden">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center font-bold text-white text-xs shadow-sm">
+                MKT
+              </div>
+              <div>
+                <p className="font-bold text-white text-sm leading-tight">{t.appName}</p>
+                <p className="text-[10px] text-slate-400">Teams B1 - B7</p>
+              </div>
             </div>
-            <div>
-              <p className="font-bold text-white text-sm">{t.appName}</p>
-              <p className="text-[10px] text-slate-400">Teams B1 - B7</p>
-            </div>
+            <button
+              onClick={() => setMobileMenuOpen(false)}
+              className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 cursor-pointer transition"
+              aria-label="Close menu"
+            >
+              <X className="w-5 h-5" />
+            </button>
           </div>
 
           {/* Navigation Links */}

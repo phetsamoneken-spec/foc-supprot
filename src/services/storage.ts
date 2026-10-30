@@ -31,6 +31,42 @@ const STORAGE_KEYS = {
   AUTH: 'mkt_current_user_v1'
 };
 
+const memoryCache: Record<string, string> = {};
+
+function safeGetItem(key: string): string | null {
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      const item = window.localStorage.getItem(key);
+      if (item !== null) return item;
+    }
+  } catch (e) {
+    console.warn(`localStorage.getItem failed for ${key}, using memory cache`, e);
+  }
+  return memoryCache[key] ?? null;
+}
+
+function safeSetItem(key: string, value: string): void {
+  try {
+    memoryCache[key] = value;
+    if (typeof window !== 'undefined' && window.localStorage) {
+      window.localStorage.setItem(key, value);
+    }
+  } catch (e) {
+    console.warn(`localStorage.setItem failed for ${key}, saved in memory only`, e);
+  }
+}
+
+function safeRemoveItem(key: string): void {
+  try {
+    delete memoryCache[key];
+    if (typeof window !== 'undefined' && window.localStorage) {
+      window.localStorage.removeItem(key);
+    }
+  } catch (e) {
+    console.warn(`localStorage.removeItem failed for ${key}`, e);
+  }
+}
+
 class StorageService {
   private customers: Customer[] = [];
   private conditions: CustomerCondition[] = [];
@@ -49,36 +85,36 @@ class StorageService {
 
   public init() {
     try {
-      const storedSettings = localStorage.getItem(STORAGE_KEYS.SETTINGS);
+      const storedSettings = safeGetItem(STORAGE_KEYS.SETTINGS);
       if (storedSettings) {
         this.settings = { ...INITIAL_SETTINGS, ...JSON.parse(storedSettings) };
       }
 
-      const storedUsers = localStorage.getItem(STORAGE_KEYS.USERS);
+      const storedUsers = safeGetItem(STORAGE_KEYS.USERS);
       if (storedUsers) {
         this.users = JSON.parse(storedUsers);
       } else {
         this.users = [...INITIAL_USERS];
-        localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(this.users));
+        safeSetItem(STORAGE_KEYS.USERS, JSON.stringify(this.users));
       }
 
-      const storedAuth = localStorage.getItem(STORAGE_KEYS.AUTH);
+      const storedAuth = safeGetItem(STORAGE_KEYS.AUTH);
       if (storedAuth) {
         this.currentUser = JSON.parse(storedAuth);
       } else {
         // Default login as Admin for instant accessibility
         this.currentUser = this.users[0];
-        localStorage.setItem(STORAGE_KEYS.AUTH, JSON.stringify(this.currentUser));
+        safeSetItem(STORAGE_KEYS.AUTH, JSON.stringify(this.currentUser));
       }
 
-      const storedCustomers = localStorage.getItem(STORAGE_KEYS.CUSTOMERS);
+      const storedCustomers = safeGetItem(STORAGE_KEYS.CUSTOMERS);
       if (storedCustomers) {
         this.customers = JSON.parse(storedCustomers);
-        this.conditions = JSON.parse(localStorage.getItem(STORAGE_KEYS.CONDITIONS) || '[]');
-        this.contracts = JSON.parse(localStorage.getItem(STORAGE_KEYS.CONTRACTS) || '[]');
-        this.budgets = JSON.parse(localStorage.getItem(STORAGE_KEYS.BUDGETS) || '[]');
-        this.transactions = JSON.parse(localStorage.getItem(STORAGE_KEYS.TRANSACTIONS) || '[]');
-        this.logs = JSON.parse(localStorage.getItem(STORAGE_KEYS.LOGS) || '[]');
+        this.conditions = JSON.parse(safeGetItem(STORAGE_KEYS.CONDITIONS) || '[]');
+        this.contracts = JSON.parse(safeGetItem(STORAGE_KEYS.CONTRACTS) || '[]');
+        this.budgets = JSON.parse(safeGetItem(STORAGE_KEYS.BUDGETS) || '[]');
+        this.transactions = JSON.parse(safeGetItem(STORAGE_KEYS.TRANSACTIONS) || '[]');
+        this.logs = JSON.parse(safeGetItem(STORAGE_KEYS.LOGS) || '[]');
 
         // Synchronize and enforce formula: Annual Budget = Condition Quantity (crates) * Price per Crate
         const pricePerCrate = this.settings.pricePerCrate || 240000;
@@ -180,14 +216,14 @@ class StorageService {
   }
 
   private persistAll() {
-    localStorage.setItem(STORAGE_KEYS.CUSTOMERS, JSON.stringify(this.customers));
-    localStorage.setItem(STORAGE_KEYS.CONDITIONS, JSON.stringify(this.conditions));
-    localStorage.setItem(STORAGE_KEYS.CONTRACTS, JSON.stringify(this.contracts));
-    localStorage.setItem(STORAGE_KEYS.BUDGETS, JSON.stringify(this.budgets));
-    localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(this.transactions));
-    localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(this.users));
-    localStorage.setItem(STORAGE_KEYS.LOGS, JSON.stringify(this.logs));
-    localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(this.settings));
+    safeSetItem(STORAGE_KEYS.CUSTOMERS, JSON.stringify(this.customers));
+    safeSetItem(STORAGE_KEYS.CONDITIONS, JSON.stringify(this.conditions));
+    safeSetItem(STORAGE_KEYS.CONTRACTS, JSON.stringify(this.contracts));
+    safeSetItem(STORAGE_KEYS.BUDGETS, JSON.stringify(this.budgets));
+    safeSetItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(this.transactions));
+    safeSetItem(STORAGE_KEYS.USERS, JSON.stringify(this.users));
+    safeSetItem(STORAGE_KEYS.LOGS, JSON.stringify(this.logs));
+    safeSetItem(STORAGE_KEYS.SETTINGS, JSON.stringify(this.settings));
   }
 
   // --- Auth & Permission System ---
@@ -198,10 +234,10 @@ class StorageService {
   public setCurrentUser(user: User | null) {
     this.currentUser = user;
     if (user) {
-      localStorage.setItem(STORAGE_KEYS.AUTH, JSON.stringify(user));
+      safeSetItem(STORAGE_KEYS.AUTH, JSON.stringify(user));
       this.logAction('USER_LOGIN', `User ${user.username} logged in (${user.role} - ${user.team})`);
     } else {
-      localStorage.removeItem(STORAGE_KEYS.AUTH);
+      safeRemoveItem(STORAGE_KEYS.AUTH);
     }
     this.notify();
   }
@@ -254,7 +290,7 @@ class StorageService {
 
   public updateSettings(newSettings: Partial<AppSettings>) {
     this.settings = { ...this.settings, ...newSettings };
-    localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(this.settings));
+    safeSetItem(STORAGE_KEYS.SETTINGS, JSON.stringify(this.settings));
     this.logAction('UPDATE_SETTINGS', 'Application settings updated');
     this.notify();
   }
@@ -841,7 +877,7 @@ class StorageService {
   }
 
   private persistUsers() {
-    localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(this.users));
+    safeSetItem(STORAGE_KEYS.USERS, JSON.stringify(this.users));
   }
 
   // --- Audit Logs ---
@@ -863,7 +899,7 @@ class StorageService {
     if (this.logs.length > 500) {
       this.logs = this.logs.slice(0, 500);
     }
-    localStorage.setItem(STORAGE_KEYS.LOGS, JSON.stringify(this.logs));
+    safeSetItem(STORAGE_KEYS.LOGS, JSON.stringify(this.logs));
   }
 
   // --- Dashboard Metrics Aggregator ---
