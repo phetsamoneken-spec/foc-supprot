@@ -11,6 +11,7 @@ export const TEAMS: Team[] = ['B1', 'B2', 'B3', 'B4', 'B5', 'B6', 'B7'];
 export interface User {
   id: string;
   username: string;
+  password?: string;
   fullName: string;
   email?: string;
   role: UserRole;

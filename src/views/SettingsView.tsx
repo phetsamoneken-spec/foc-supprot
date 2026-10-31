@@ -317,14 +317,16 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onOpenGasDocs }) => 
               <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
               <span>Google Sheets Database & Apps Script</span>
             </div>
-            <button
-              type="button"
-              onClick={onOpenGasDocs}
-              className="text-xs font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1 cursor-pointer"
-            >
-              <Code2 className="w-3.5 h-3.5" />
-              <span>{lang === 'lo' ? 'ເບິ່ງໂຄດ Backend .gs' : 'View GAS Code'}</span>
-            </button>
+            {isAdmin && (
+              <button
+                type="button"
+                onClick={onOpenGasDocs}
+                className="text-xs font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1 cursor-pointer"
+              >
+                <Code2 className="w-3.5 h-3.5" />
+                <span>{lang === 'lo' ? 'ເບິ່ງໂຄດ Backend .gs' : 'View GAS Code'}</span>
+              </button>
+            )}
           </div>
 
           <div>

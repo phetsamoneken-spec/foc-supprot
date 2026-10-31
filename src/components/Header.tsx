@@ -14,6 +14,7 @@ import { storage } from '../services/storage';
 import { translations, Language } from '../locales/translations';
 import { PWAInstallButton } from './PWAInstallButton';
 import { Team, TEAMS } from '../types';
+import { EditProfileModal } from './EditProfileModal';
 
 interface HeaderProps {
   currentView: string;
@@ -38,6 +39,7 @@ export const Header: React.FC<HeaderProps> = ({
   const t = translations[lang];
 
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [showEditProfileModal, setShowEditProfileModal] = useState(false);
 
   const toggleLanguage = () => {
     const nextLang = lang === 'lo' ? 'en' : 'lo';
@@ -122,14 +124,16 @@ export const Header: React.FC<HeaderProps> = ({
               <ExternalLink className="w-3 h-3 text-emerald-500" />
             </a>
 
-            {/* GAS Backend Code Modal Button */}
-            <button
-              onClick={onOpenGasDocs}
-              className="hidden lg:flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-blue-300 bg-blue-950/60 hover:bg-blue-900/60 border border-blue-800/60 rounded-xl transition cursor-pointer"
-              title="Google Apps Script backend deployment files"
-            >
-              <span>GAS Backend</span>
-            </button>
+            {/* GAS Backend Code Modal Button (Admin Only) */}
+            {isAdmin && (
+              <button
+                onClick={onOpenGasDocs}
+                className="hidden lg:flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-blue-300 bg-blue-950/60 hover:bg-blue-900/60 border border-blue-800/60 rounded-xl transition cursor-pointer"
+                title="Google Apps Script backend deployment files"
+              >
+                <span>GAS Backend</span>
+              </button>
+            )}
 
             {/* PWA Install Button */}
             <PWAInstallButton language={lang} />
@@ -182,9 +186,20 @@ export const Header: React.FC<HeaderProps> = ({
                     <button
                       onClick={() => {
                         setUserMenuOpen(false);
+                        setShowEditProfileModal(true);
+                      }}
+                      className="w-full text-left px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100 flex items-center gap-2 cursor-pointer transition"
+                    >
+                      <User className="w-4 h-4 text-blue-600" />
+                      <span>{lang === 'lo' ? 'ແກ້ໄຂໂປຣໄຟລ໌ / ລະຫັດຜ່ານ' : 'Edit Profile & Password'}</span>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setUserMenuOpen(false);
                         storage.logout();
                       }}
-                      className="w-full text-left px-4 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 flex items-center gap-2 cursor-pointer transition"
+                      className="w-full text-left px-4 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 flex items-center gap-2 cursor-pointer transition border-t border-slate-100"
                     >
                       <LogOut className="w-4 h-4" />
                       <span>{t.logout}</span>
@@ -197,6 +212,12 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
       </div>
+
+      {showEditProfileModal && (
+        <EditProfileModal
+          onClose={() => setShowEditProfileModal(false)}
+        />
+      )}
     </header>
   );
 };

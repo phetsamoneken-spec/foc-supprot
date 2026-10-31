@@ -93,6 +93,17 @@ class StorageService {
       const storedUsers = safeGetItem(STORAGE_KEYS.USERS);
       if (storedUsers) {
         this.users = JSON.parse(storedUsers);
+        // Ensure all users have passwords populated
+        let updated = false;
+        this.users.forEach((u) => {
+          if (!u.password) {
+            u.password = u.username === 'admin' ? 'admin123' : `${u.username}_123`;
+            updated = true;
+          }
+        });
+        if (updated) {
+          safeSetItem(STORAGE_KEYS.USERS, JSON.stringify(this.users));
+        }
       } else {
         this.users = [...INITIAL_USERS];
         safeSetItem(STORAGE_KEYS.USERS, JSON.stringify(this.users));
@@ -251,6 +262,11 @@ class StorageService {
     }
     if (!user.isActive) {
       return { success: false, message: 'ບັນຊີນີ້ຖືກປິດການໃຊ້ງານແລ້ວ (Account is disabled)' };
+    }
+
+    // Password verification
+    if (password && user.password && password.trim() !== user.password) {
+      return { success: false, message: 'ລະຫັດຜ່ານບໍ່ຖືກຕ້ອງ (Incorrect password)' };
     }
 
     // Update last login
@@ -756,6 +772,13 @@ class StorageService {
     address?: string;
     province?: string;
   }): { success: boolean; message: string } {
+    // RBAC: Non-admin users can only add customers to their own assigned team
+    if (this.currentUser && this.currentUser.role !== 'ADMIN' && this.currentUser.team !== 'ALL') {
+      if (data.team !== this.currentUser.team) {
+        return { success: false, message: 'ທ່ານສາມາດເພີ່ມລູກຄ້າສະເພາະທີມຂອງທ່ານເທົ່ານັ້ນ' };
+      }
+    }
+
     if (this.customers.some((c) => c.code.trim().toUpperCase() === data.code.trim().toUpperCase())) {
       return { success: false, message: 'ລະຫັດລູກຄ້ານີ້ມີຢູ່ໃນລະບົບແລ້ວ (Duplicate Customer Code)' };
     }
@@ -829,6 +852,7 @@ class StorageService {
 
   public addUser(data: {
     username: string;
+    password?: string;
     fullName: string;
     role: 'ADMIN' | 'TEAM_USER';
     team: Team;
@@ -841,6 +865,7 @@ class StorageService {
     const newUser: User = {
       id: `USR-${Date.now().toString().slice(-4)}`,
       username: data.username.trim(),
+      password: data.password?.trim() || `${data.username.trim()}_123`,
       fullName: data.fullName.trim(),
       email: data.email || `${data.username}@laocompany.la`,
       role: data.role,
@@ -858,11 +883,18 @@ class StorageService {
 
   public updateUser(
     id: string,
-    data: Partial<Pick<User, 'fullName' | 'role' | 'team' | 'isActive' | 'email'>>
+    data: Partial<Pick<User, 'username' | 'password' | 'fullName' | 'role' | 'team' | 'isActive' | 'email'>>
   ): { success: boolean; message: string } {
     const user = this.users.find((u) => u.id === id);
     if (!user) {
       return { success: false, message: 'User not found' };
+    }
+
+    // Check duplicate username if username is changed
+    if (data.username && data.username.toLowerCase() !== user.username.toLowerCase()) {
+      if (this.users.some((u) => u.id !== id && u.username.toLowerCase() === data.username!.toLowerCase())) {
+        return { success: false, message: 'ຊື່ຜູ້ໃຊ້ນີ້ມີຢູ່ແລ້ວ (Username already taken)' };
+      }
     }
 
     Object.assign(user, data);
@@ -870,10 +902,44 @@ class StorageService {
       user.team = 'ALL';
     }
 
+    // If current logged-in user is updated, update session
+    if (this.currentUser && this.currentUser.id === id) {
+      this.currentUser = { ...user };
+      safeSetItem(STORAGE_KEYS.AUTH, JSON.stringify(this.currentUser));
+    }
+
     this.persistUsers();
-    this.logAction('UPDATE_USER', `Updated user ${user.username}`);
+    this.logAction('UPDATE_USER', `Updated user ${user.username} (${user.fullName})`);
     this.notify();
-    return { success: true, message: 'ອັບເດດຂໍ້ມູນຜູ້ໃຊ້ງານແລ້ວ' };
+    return { success: true, message: 'ອັບເດດຂໍ້ມູນຜູ້ໃຊ້ງານສຳເລັດແລ້ວ' };
+  }
+
+  public resetUserPassword(id: string, newPassword?: string): { success: boolean; message: string; password?: string } {
+    const user = this.users.find((u) => u.id === id);
+    if (!user) {
+      return { success: false, message: 'User not found' };
+    }
+    const defaultPw = newPassword?.trim() || `${user.username}_123`;
+    user.password = defaultPw;
+    this.persistUsers();
+    this.logAction('RESET_PASSWORD', `Reset password for user ${user.username}`);
+    this.notify();
+    return { success: true, message: `ຣີເຊັດລະຫັດຜ່ານສຳເລັດ: ${defaultPw}`, password: defaultPw };
+  }
+
+  public deleteUser(id: string): { success: boolean; message: string } {
+    const user = this.users.find((u) => u.id === id);
+    if (!user) {
+      return { success: false, message: 'User not found' };
+    }
+    if (user.username === 'admin') {
+      return { success: false, message: 'ບໍ່ສາມາດລຶບບັນຊີຫຼັກ Admin ໄດ້' };
+    }
+    this.users = this.users.filter((u) => u.id !== id);
+    this.persistUsers();
+    this.logAction('DELETE_USER', `Deleted user ${user.username}`);
+    this.notify();
+    return { success: true, message: 'ລຶບບັນຊີຜູ້ໃຊ້ງານສຳເລັດແລ້ວ' };
   }
 
   private persistUsers() {

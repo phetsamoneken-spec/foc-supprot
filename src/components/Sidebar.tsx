@@ -168,27 +168,29 @@ export const Sidebar: React.FC<SidebarProps> = ({
             })}
           </nav>
 
-          {/* Google Apps Script Quick Action Box */}
-          <div className="p-3.5 rounded-2xl bg-gradient-to-b from-slate-800/80 to-slate-800/40 border border-slate-700/80">
-            <div className="flex items-center gap-2 text-xs font-bold text-blue-400">
-              <Code2 className="w-4 h-4" />
-              <span>Google Apps Script</span>
+          {/* Google Apps Script Quick Action Box (Admin Only) */}
+          {isAdmin && (
+            <div className="p-3.5 rounded-2xl bg-gradient-to-b from-slate-800/80 to-slate-800/40 border border-slate-700/80">
+              <div className="flex items-center gap-2 text-xs font-bold text-blue-400">
+                <Code2 className="w-4 h-4" />
+                <span>Google Apps Script</span>
+              </div>
+              <p className="text-[11px] text-slate-400 mt-1 leading-relaxed">
+                {lang === 'lo'
+                  ? 'ໂຄດ Apps Script ພ້ອມ Deploy ໃນ Spreadsheet ຂອງທ່ານ'
+                  : 'Backend code ready for deployment to your Google Sheet'}
+              </p>
+              <button
+                onClick={() => {
+                  onOpenGasDocs();
+                  if (mobileMenuOpen) setMobileMenuOpen(false);
+                }}
+                className="mt-3 w-full py-1.5 px-3 text-[11px] font-semibold text-white bg-blue-600/90 hover:bg-blue-600 rounded-lg transition flex items-center justify-center gap-1.5 cursor-pointer shadow-sm"
+              >
+                <span>{lang === 'lo' ? 'ເບິ່ງໂຄດ Backend .gs' : 'View GAS Backend'}</span>
+              </button>
             </div>
-            <p className="text-[11px] text-slate-400 mt-1 leading-relaxed">
-              {lang === 'lo'
-                ? 'ໂຄດ Apps Script ພ້ອມ Deploy ໃນ Spreadsheet ຂອງທ່ານ'
-                : 'Backend code ready for deployment to your Google Sheet'}
-            </p>
-            <button
-              onClick={() => {
-                onOpenGasDocs();
-                if (mobileMenuOpen) setMobileMenuOpen(false);
-              }}
-              className="mt-3 w-full py-1.5 px-3 text-[11px] font-semibold text-white bg-blue-600/90 hover:bg-blue-600 rounded-lg transition flex items-center justify-center gap-1.5 cursor-pointer shadow-sm"
-            >
-              <span>{lang === 'lo' ? 'ເບິ່ງໂຄດ Backend .gs' : 'View GAS Backend'}</span>
-            </button>
-          </div>
+          )}
         </div>
 
         {/* Footer info in sidebar */}

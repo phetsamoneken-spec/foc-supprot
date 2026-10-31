@@ -25,8 +25,10 @@ export const AddCustomerModal: React.FC<AddCustomerModalProps> = ({
   const lang: Language = settings.language;
   const t = translations[lang];
 
-  const [team, setTeam] = useState<Team>(currentUser?.team !== 'ALL' ? (currentUser?.team as Team) : 'B1');
-  const [code, setCode] = useState(`CUST-${team}-${Date.now().toString().slice(-3)}`);
+  const isAdmin = currentUser?.role === 'ADMIN';
+  const userTeam: Team = currentUser?.team && currentUser.team !== 'ALL' ? (currentUser.team as Team) : 'B1';
+  const [team, setTeam] = useState<Team>(userTeam);
+  const [code, setCode] = useState(`CUST-${userTeam}-${Date.now().toString().slice(-4)}`);
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [province, setProvince] = useState('ນະຄອນຫຼວງວຽງຈັນ (Vientiane Capital)');
@@ -48,7 +50,7 @@ export const AddCustomerModal: React.FC<AddCustomerModalProps> = ({
 
   const handleTeamChange = (newTeam: Team) => {
     setTeam(newTeam);
-    setCode(`CUST-${newTeam}-${Date.now().toString().slice(-3)}`);
+    setCode(`CUST-${newTeam}-${Date.now().toString().slice(-4)}`);
   };
 
   const handleQtyChange = (qty: number) => {
@@ -94,10 +96,10 @@ export const AddCustomerModal: React.FC<AddCustomerModalProps> = ({
             </div>
             <div>
               <h3 className="text-base font-bold text-white">
-                {t.addNewCustomer}
+                {lang === 'lo' ? 'ເພີ່ມຮ້ານໃໝ່ (Add Store / Customer)' : t.addNewCustomer}
               </h3>
               <p className="text-[11px] text-slate-400">
-                {lang === 'lo' ? 'ເພີ່ມຂໍ້ມູນລູກຄ້າໃໝ່ພ້ອມເງື່ອນໄຂສັນຍາ' : 'Register New Customer Account & Contract Conditions'}
+                {lang === 'lo' ? 'ເພີ່ມຂໍ້ມູນຮ້ານໃໝ່ພ້ອມເງື່ອນໄຂສິນຄ້າ ແລະ ຮອບສັນຍາ' : 'Register New Customer Account & Contract Conditions'}
               </p>
             </div>
           </div>
@@ -125,18 +127,27 @@ export const AddCustomerModal: React.FC<AddCustomerModalProps> = ({
               <label className="block text-xs font-semibold text-slate-700 mb-1">
                 {t.team} <span className="text-rose-500">*</span>
               </label>
-              <select
-                required
-                value={team}
-                onChange={(e) => handleTeamChange(e.target.value as Team)}
-                className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                {TEAMS.map((tm) => (
-                  <option key={tm} value={tm}>
-                    Team {tm} (MDE-{tm})
-                  </option>
-                ))}
-              </select>
+              {isAdmin ? (
+                <select
+                  required
+                  value={team}
+                  onChange={(e) => handleTeamChange(e.target.value as Team)}
+                  className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  {TEAMS.map((tm) => (
+                    <option key={tm} value={tm}>
+                      Team {tm} (MDE-{tm})
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <div className="w-full p-2.5 bg-blue-50/70 border border-blue-200 rounded-xl text-xs font-bold text-blue-900 flex items-center justify-between">
+                  <span>Team {team} (MDE-{team})</span>
+                  <span className="text-[10px] bg-blue-200/60 text-blue-800 px-2 py-0.5 rounded-md">
+                    {lang === 'lo' ? 'ທີມຂອງທ່ານ' : 'Your Team'}
+                  </span>
+                </div>
+              )}
             </div>
 
             <div>

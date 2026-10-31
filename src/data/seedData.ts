@@ -22,6 +22,7 @@ export const INITIAL_USERS: User[] = [
   {
     id: 'USR-001',
     username: 'admin',
+    password: 'admin123',
     fullName: 'ສຸລິຍາ ມະນີວົງ (Sys Admin)',
     email: 'admin.mkt@laocompany.la',
     role: 'ADMIN',
@@ -33,6 +34,7 @@ export const INITIAL_USERS: User[] = [
   {
     id: 'USR-B1',
     username: 'b1_user',
+    password: 'b1_123',
     fullName: 'ຄຳແພງ ວົງສາ (Team Leader B1)',
     email: 'b1.mkt@laocompany.la',
     role: 'TEAM_USER',
@@ -44,6 +46,7 @@ export const INITIAL_USERS: User[] = [
   {
     id: 'USR-B2',
     username: 'b2_user',
+    password: 'b2_123',
     fullName: 'ສົມສັກ ແກ້ວມະນີ (Team B2)',
     email: 'b2.mkt@laocompany.la',
     role: 'TEAM_USER',
@@ -55,6 +58,7 @@ export const INITIAL_USERS: User[] = [
   {
     id: 'USR-B3',
     username: 'b3_user',
+    password: 'b3_123',
     fullName: 'ມານີວັນ ສີລິວົງ (Team B3)',
     email: 'b3.mkt@laocompany.la',
     role: 'TEAM_USER',
@@ -66,6 +70,7 @@ export const INITIAL_USERS: User[] = [
   {
     id: 'USR-B4',
     username: 'b4_user',
+    password: 'b4_123',
     fullName: 'ບຸນທັນ ຈັນທະວົງ (Team B4)',
     email: 'b4.mkt@laocompany.la',
     role: 'TEAM_USER',
@@ -77,6 +82,7 @@ export const INITIAL_USERS: User[] = [
   {
     id: 'USR-B5',
     username: 'b5_user',
+    password: 'b5_123',
     fullName: 'ອານຸສອນ ພົມມະຈັນ (Team B5)',
     email: 'b5.mkt@laocompany.la',
     role: 'TEAM_USER',
@@ -88,6 +94,7 @@ export const INITIAL_USERS: User[] = [
   {
     id: 'USR-B6',
     username: 'b6_user',
+    password: 'b6_123',
     fullName: 'ດາວອນ ໄຊຍະສິດ (Team B6)',
     email: 'b6.mkt@laocompany.la',
     role: 'TEAM_USER',
@@ -99,6 +106,7 @@ export const INITIAL_USERS: User[] = [
   {
     id: 'USR-B7',
     username: 'b7_user',
+    password: 'b7_123',
     fullName: 'ພຸດທະສອນ ລັດຕະນະ (Team B7)',
     email: 'b7.mkt@laocompany.la',
     role: 'TEAM_USER',

@@ -248,16 +248,15 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
             </button>
           )}
 
-          {/* Add New Customer */}
-          {isAdmin && (
-            <button
-              onClick={onOpenAddCustomer}
-              className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-white bg-blue-600 hover:bg-blue-500 rounded-xl transition cursor-pointer shadow-md shadow-blue-600/20 active:scale-95"
-            >
-              <Plus className="w-4 h-4" />
-              <span>{t.addNewCustomer}</span>
-            </button>
-          )}
+          {/* Add New Customer / Store (Available to both Admin and Team Users) */}
+          <button
+            onClick={onOpenAddCustomer}
+            className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-white bg-blue-600 hover:bg-blue-500 rounded-xl transition cursor-pointer shadow-md shadow-blue-600/20 active:scale-95"
+            title={lang === 'lo' ? 'ເພີ່ມຮ້ານໃໝ່' : 'Add New Store / Customer'}
+          >
+            <Plus className="w-4 h-4" />
+            <span>{lang === 'lo' ? 'ເພີ່ມຮ້ານໃໝ່' : t.addNewCustomer}</span>
+          </button>
         </div>
       </div>
 
