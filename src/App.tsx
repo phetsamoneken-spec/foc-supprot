@@ -106,7 +106,7 @@ export default function App() {
         onOpenGasDocs={() => setShowGasDocsModal(true)}
       />
 
-      <div className="flex-1 flex max-w-7xl w-full mx-auto">
+      <div className="flex-1 flex w-full">
         
         {/* Sidebar */}
         <Sidebar

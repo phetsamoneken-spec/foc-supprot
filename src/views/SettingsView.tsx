@@ -108,7 +108,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onOpenGasDocs }) => 
   };
 
   return (
-    <div className="space-y-6 max-w-4xl">
+    <div className="space-y-6 max-w-6xl w-full">
       
       {/* Title */}
       <div>
