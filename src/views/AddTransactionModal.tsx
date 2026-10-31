@@ -220,9 +220,9 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
               <input
                 type="number"
                 required
-                min="1000"
-                step="10000"
-                placeholder="e.g. 5,000,000"
+                min="0"
+                step="any"
+                placeholder="e.g. 15,000,000"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value === '' ? '' : Number(e.target.value))}
                 className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"

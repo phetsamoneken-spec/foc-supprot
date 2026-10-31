@@ -273,7 +273,7 @@ export const AddCustomerModal: React.FC<AddCustomerModalProps> = ({
                 type="number"
                 required
                 min="0"
-                step="1000000"
+                step="any"
                 value={annualBudget}
                 onChange={(e) => setAnnualBudget(Number(e.target.value))}
                 className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900"

@@ -228,8 +228,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onOpenGasDocs }) => 
               </label>
               <input
                 type="number"
-                min="10000"
-                step="5000"
+                min="0"
+                step="any"
                 disabled={!isAdmin}
                 value={formData.pricePerCrate || 240000}
                 onChange={(e) => setFormData({ ...formData, pricePerCrate: Number(e.target.value) })}

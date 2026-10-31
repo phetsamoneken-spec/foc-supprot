@@ -193,8 +193,8 @@ export const AddContractModal: React.FC<AddContractModalProps> = ({
             <input
               type="number"
               required
-              min="1000000"
-              step="1000000"
+              min="0"
+              step="any"
               value={annualBudget}
               onChange={(e) => setAnnualBudget(Number(e.target.value))}
               className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"

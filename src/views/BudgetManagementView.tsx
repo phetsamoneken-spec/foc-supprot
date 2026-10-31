@@ -405,7 +405,7 @@ export const BudgetManagementView: React.FC<BudgetManagementViewProps> = ({
                   type="number"
                   required
                   min="0"
-                  step="500000"
+                  step="any"
                   value={editingBudget.newAmount}
                   onChange={(e) =>
                     setEditingBudget({ ...editingBudget, newAmount: Number(e.target.value) })

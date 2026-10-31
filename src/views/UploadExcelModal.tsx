@@ -325,7 +325,8 @@ export const UploadExcelModal: React.FC<UploadExcelModalProps> = ({
               </label>
               <input
                 type="number"
-                step="1000000"
+                min="0"
+                step="any"
                 value={defaultBudget}
                 onChange={(e) => setDefaultBudget(Number(e.target.value))}
                 className="w-full p-2 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-900"

@@ -113,8 +113,8 @@ export const EditPricePerCrateModal: React.FC<EditPricePerCrateModalProps> = ({
               <div className="relative">
                 <input
                   type="number"
-                  min="10000"
-                  step="5000"
+                  min="0"
+                  step="any"
                   required
                   value={newPrice}
                   onChange={(e) => setNewPrice(Number(e.target.value))}
