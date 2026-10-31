@@ -524,35 +524,64 @@ function importExistingCustomerData() {
           {/* TAB 5: GITHUB PAGES */}
           {activeTab === 'GITHUB_PAGES' && (
             <div className="space-y-4 text-xs text-slate-700">
-              <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl">
-                <h4 className="font-bold text-sm text-slate-900 mb-1">
-                  GitHub Pages Deployment Instructions
+              {/* Alert explaining White Screen issue */}
+              <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl">
+                <h4 className="font-bold text-sm text-amber-900 mb-1">
+                  {lang === 'lo' ? '⚠️ ວິທີແກ້ໄຂ "ເວັບຂຶ້ນຈໍຂາວ" (Failed to load resource: main.tsx 404)' : '⚠️ Fixing White Screen (Failed to load resource: main.tsx 404)'}
                 </h4>
-                <p className="text-slate-600 leading-relaxed">
-                  This application is built with Vite React SPA and static PWA assets, making it 100% compatible with GitHub Pages hosting with zero server costs!
+                <p className="text-amber-800 leading-relaxed">
+                  {lang === 'lo'
+                    ? 'ສາເຫດທີ່ຂຶ້ນຈໍຂາວ: GitHub Pages ເປັນພຽງ Static Web Server ບໍ່ສາມາດ Run ໄຟລ໌ source code TypeScript (/src/main.tsx) ໂດຍກົງໄດ້. ທ່ານຕ້ອງໃຫ້ GitHub Actions build ໄຟລ໌ອອກມາເປັນ JavaScript ກ່ອນ.'
+                    : 'Cause: GitHub Pages is a static server and cannot run raw TypeScript source files (/src/main.tsx). You must deploy the compiled bundle via GitHub Actions.'}
                 </p>
               </div>
 
               <div className="space-y-3">
-                <div className="p-3 bg-white rounded-xl border border-slate-200">
-                  <span className="font-bold text-slate-900">Step 1: Build the static bundle</span>
-                  <pre className="mt-1 p-2 bg-slate-900 text-slate-200 rounded-lg font-mono text-[11px]">
-                    npm run build
-                  </pre>
+                <div className="p-3.5 bg-white rounded-xl border border-slate-200 shadow-xs">
+                  <span className="font-bold text-slate-900 text-xs">
+                    {lang === 'lo' ? 'ວິທີທີ່ 1 (ແນະນຳ): ໃຊ້ GitHub Actions (ອັດຕະໂນມັດ 100%)' : 'Method 1 (Recommended): GitHub Actions (100% Automated)'}
+                  </span>
+                  <ol className="list-decimal list-inside space-y-1 text-slate-600 mt-1.5 leading-relaxed">
+                    <li>
+                      {lang === 'lo'
+                        ? 'ໂຄງການນີ້ໄດ້ເພີ່ມໄຟລ໌ .github/workflows/deploy.yml ໃຫ້ຮຽບຮ້ອຍແລ້ວ'
+                        : 'The workflow file .github/workflows/deploy.yml is already added to this project.'}
+                    </li>
+                    <li>
+                      {lang === 'lo'
+                        ? 'ເຂົ້າໄປທີ່ GitHub Repository ຂອງທ່ານ > ເມນູ Settings > ເລືອກ Pages (ເມນູດ້ານຊ້າຍ)'
+                        : 'Go to your GitHub Repository > Settings > Pages (left sidebar).'}
+                    </li>
+                    <li>
+                      {lang === 'lo'
+                        ? 'ຢູ່ຊ່ອງ "Build and deployment" > ບ່ອນ Source: ປ່ຽນຈາກ "Deploy from a branch" ມາເປັນ "GitHub Actions"'
+                        : 'Under "Build and deployment" > Source: Change from "Deploy from a branch" to "GitHub Actions".'}
+                    </li>
+                    <li>
+                      {lang === 'lo'
+                        ? 'ຫຼັງຈາກນັ້ນ Push ໂຄດຂຶ້ນ GitHub, ລະບົບຈະ Build ແລະ Deploy ອັດຕະໂນມັດ 100% ໂດຍບໍ່ມີຈໍຂາວອີກຕໍ່ໄປ!'
+                        : 'Push your code to GitHub. GitHub will automatically run the build and publish the site!'}
+                    </li>
+                  </ol>
                 </div>
 
-                <div className="p-3 bg-white rounded-xl border border-slate-200">
-                  <span className="font-bold text-slate-900">Step 2: Deploy to GitHub Repository</span>
-                  <p className="text-slate-600 mt-1">
-                    Push the project to your GitHub repository. In your repository Settings &gt; Pages, select source: <code>GitHub Actions</code> or deploy the <code>dist</code> folder via <code>gh-pages</code>.
-                  </p>
-                </div>
-
-                <div className="p-3 bg-white rounded-xl border border-slate-200">
-                  <span className="font-bold text-slate-900">Step 3: Access control & PWA offline cache</span>
-                  <p className="text-slate-600 mt-1">
-                    All authentication and team access permissions (B1-B7) will work seamlessly on GitHub Pages. The service worker precaches all visual assets for offline usage.
-                  </p>
+                <div className="p-3.5 bg-white rounded-xl border border-slate-200 shadow-xs">
+                  <span className="font-bold text-slate-900 text-xs">
+                    {lang === 'lo' ? 'ວິທີທີ່ 2: Build ແລະ Deploy ໂຟນເດີ dist ດ້ວຍຕົນເອງ' : 'Method 2: Manual Build & Deploy dist Folder'}
+                  </span>
+                  <div className="mt-1.5 space-y-1 text-slate-600 leading-relaxed">
+                    <p>
+                      {lang === 'lo' ? 'ຖ້າທ່ານຕ້ອງການ Deploy ດ້ວຍຕົນເອງ, ໃຫ້ Build ໂຄງການກ່ອນ:' : 'If deploying manually, run the build command first:'}
+                    </p>
+                    <pre className="p-2 bg-slate-900 text-slate-200 rounded-lg font-mono text-[11px]">
+                      npm run build
+                    </pre>
+                    <p className="mt-1">
+                      {lang === 'lo'
+                        ? 'ຈາກນັ້ນນຳເອົາໄຟລ໌ທັງໝົດທີ່ຢູ່ໃນໂຟນເດີ dist/ (index.html, assets, icon.svg...) ໄປວາງໃສ່ Branch ທີ່ທ່ານເລືອກ Deploy ໃນ GitHub Pages.'
+                        : 'Then upload the contents of the dist/ directory to your designated GitHub Pages branch.'}
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
